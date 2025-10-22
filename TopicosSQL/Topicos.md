@@ -553,7 +553,18 @@ FROM Employees
 
 SELECT 
 	Bonus,
-	(Bonus/NULLIF(Salary,0)) AS [BonusSalary]
+	(Bonus/NULLIF(Salary,0)) AS [g]
+FROM Employees
+
+SELECT 
+	UPPER(CONCAT(FirstName,' ',LastName)) AS [FullName],
+	ROUND(Salary,2) AS [Salario],
+	CASE
+		WHEN ROUND(Salary,2) >= 10000 THEN 'Alto'
+		WHEN ROUND(Salary,2) BETWEEN 5000 AND 9999 THEN 'MEDIO'
+		ELSE 'BAJO'
+	END AS 'Nivel Salarial'
+
 FROM Employees
 
 ```
@@ -564,8 +575,97 @@ Permite crear condiciones dentro de una consuta
 ```SQL 
 CASE
 	WHEN condicion THEN resultado1
-	WHEN condicion THEN resuktado
+	WHEN condicion THEN resultado
 	ELSE resultado_por_defecto
 
 END
+```
+
+```SQL
+
+-- Combinar Funciones y CASE
+/*--------------------------------------------------------------
+  INSTRUCCIONES DE CONSULTA - BASE DE DATOS NORTHWIND
+---------------------------------------------------------------
+
+1. Seleccionar los siguientes campos:
+   - Nombre del producto
+   - Fecha de la orden
+   - Teléfono del cliente
+   - Nombre del cliente en MAYÚSCULAS
+
+2. Validaciones y condiciones:
+   - Si el teléfono es NULL, mostrar el texto: "No disponible".
+   - Calcular la diferencia en días entre la fecha actual (GETDATE())
+     y la fecha de la orden.
+        * Si la diferencia es menor a 30 días → mostrar "Reciente".
+        * Si la diferencia es mayor o igual a 30 días → mostrar "Antiguo".
+
+3. El resultado de esta validación debe mostrarse en una columna llamada:
+      "Estado del pedido"
+---------------------------------------------------------------*/
+USE NORTHWND
+
+SELECT 
+	ProductName AS [NombreProducto],
+	OrderDate   AS [FechaOrden],
+	ISNULL(Phone,'No disponible') AS [Telefono],
+	UPPER(CompanyName) AS 'Nombre del cliente'
+FROM Products AS p
+INNER JOIN [Order Details] AS od
+ON p.ProductID = od.ProductID
+INNER JOIN Orders as o
+ON o.OrderID = od.OrderID
+INNER JOIN Customers as c
+ON c.CustomerID = o.CustomerID
+
+--=============================================================================================================================
+SELECT UPPER(c.CompanyName) AS [NombreCliente],
+	o.OrderDate AS [FechaOrden],
+	ISNULL(c.Phone,'No disponible') AS [Telefono],
+	p. ProductName,
+	CASE
+		WHEN DATEDIFF(DAY,o.OrderDate,GETDATE()) < 30 THEN 'Reciente'
+	ELSE 'Antiguo'
+	END AS [EstadoDelPedido]
+	INTO TablaFormateada
+FROM ( Select customerId, companyName, Phone From Customers) AS c
+INNER JOIN ( SELECT OrderID, CustomerID ,OrderDate FROM Orders) AS o
+ON c.CustomerID = o. CustomerID
+INNER JOIN ( SELECT ProductID, OrderID FROM [Order Details] ) AS od
+ON o.OrderID = od. OrderID
+INNER JOIN ( SELECT ProductID, ProductName FROM Products) AS p
+ON p. ProductID = od. ProductID;
+GO
+SELECT * FROM TablaFormateada 
+
+CREATE OR ALTER VIEW v_pedidosAntiguos
+AS
+SELECT
+	NombreCliente,
+	ProductName,
+	EstadoDelPedido
+FROM TablaFormateada
+WHERE EstadoDelPedido = 'Antiguo'
+
+SELECT * FROM v_pedidosAntiguos
+
+
+/*--------------------------------------------------------------
+  INSTRUCCIONES DE CONSULTA - BASE DE DATOS NORTHWIND
+---------------------------------------------------------------
+
+1. Seleccionar los siguientes campos:
+   - Nombre completo del empleado
+   - Correo electrónico (usando COALESCE para mostrar un valor disponible)
+
+2. Validaciones y condiciones:
+   - Si el teléfono es NULL, mostrar el texto: "No disponible".
+   - Validar el campo BONUS:
+       * Si BONUS es NULL, convertirlo a 0.
+       * Si BONUS = 0 → mostrar el texto "Sin bono".
+       * Si BONUS > 0 → concatenar el valor del BONUS anteponiendo el símbolo "$".
+
+---------------------------------------------------------------*/
+
 ```
